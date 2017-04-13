@@ -13,7 +13,7 @@ Simple **Calculator** in Swift.
 github "cp3hnu/Calculator"
 ```
 
-* Drag and drop *Calculator.framework* from /Carthage/Build/iOS/ to *Linked Frameworks and Libraries* in Xcode (Project>Target>General>Linked Frameworks and Libraries
+* Drag and drop *Calculator.framework* from /Carthage/Build/iOS/ to *Linked Frameworks and Libraries* in Xcode (Project>Target>General>Linked Frameworks and Libraries)
 
 * Add new run script
 
