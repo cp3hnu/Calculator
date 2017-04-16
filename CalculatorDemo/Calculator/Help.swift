@@ -74,40 +74,40 @@ public extension UIColor {
     func image() -> UIImage {
         let rect = CGRect(x: 0, y: 0, width: 1, height: 1)
         UIGraphicsBeginImageContext(rect.size)
-        let context = UIGraphicsGetCurrentContext()
+        let context = UIGraphicsGetCurrentContext()!
         
-        CGContextSetFillColorWithColor(context, self.CGColor)
-        CGContextFillRect(context, rect)
+        context.setFillColor(self.cgColor)
+        context.fill(rect)
         
         let image = UIGraphicsGetImageFromCurrentImageContext()
         UIGraphicsEndImageContext()
         
-        return image
+        return image!
     }
 }
 
 public extension UIButton {
     /// 可以设置高亮时的背景色
-    public func setBackgroundColor(color: UIColor, forUIControlState state: UIControlState) {
-        self.setBackgroundImage(color.image(), forState: state)
+    public func setBackgroundColor(_ color: UIColor, forUIControlState state: UIControlState) {
+        self.setBackgroundImage(color.image(), for: state)
     }
 }
 
 extension UILabel {
     /// 设置字体，参数是字体(UIFont)
-    func font(font: UIFont) -> Self {
+    func font(_ font: UIFont) -> Self {
         self.font = font
         return self
     }
     
     /// 设置字体，参数是字体大小
-    func fontSize(size: CGFloat) -> Self {
-        self.font = UIFont.systemFontOfSize(size)
+    func fontSize(_ size: CGFloat) -> Self {
+        self.font = UIFont.systemFont(ofSize: size)
         return self
     }
     
     /// 设置文字颜色
-    func textColor(color: UIColor) -> Self {
+    func textColor(_ color: UIColor) -> Self {
         self.textColor = color
         return self
     }
@@ -119,21 +119,21 @@ extension UILabel {
     
     /// 文字居中
     func alignMiddle() -> Self {
-        return self.align(.Center)
+        return self.align(.center)
     }
     
     /// 文字右对齐
     func alignRight() -> Self {
-        return self.align(.Right)
+        return self.align(.right)
     }
     
     /// 设置行数
-    func numberOfLines(number: Int) -> Self {
+    func numberOfLines(_ number: Int) -> Self {
         self.numberOfLines = number
         return self
     }
     
-    private func align(alignment: NSTextAlignment = .Left) -> Self {
+    fileprivate func align(_ alignment: NSTextAlignment = .left) -> Self {
         self.textAlignment = alignment
         return self
     }

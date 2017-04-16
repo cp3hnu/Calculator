@@ -9,28 +9,29 @@
 import UIKit
 
 struct CalStack<Element> {
-    private var elements = [Element]()
+    fileprivate var elements = [Element]()
     
-    mutating func push(element: Element) {
+    mutating func push(_ element: Element) {
         elements.append(element)
         
     #if DEBUG
-        print("push", (element as! CalOperation).character)
+        print("--- push \((element as! CalOperation).character) ---")
         printArray()
     #endif
     }
     
-    mutating func pop() -> Element? {
+    @discardableResult mutating func pop() -> Element? {
         let element = elements.popLast()
         
     #if DEBUG
         if let a = element {
-            print("pop", (a as! CalOperation).character)
+            print("--- pop \((a as! CalOperation).character) ---")
         } else {
-            print("pop nil")
+            print("--- pop nil ---")
         }
         printArray()
     #endif
+        
         return element
     }
     
@@ -55,9 +56,9 @@ struct CalStack<Element> {
     
 #if DEBUG
     func printArray() {
-        print("(")
+        print("stack: \n(")
         for op in elements {
-            print("\t", (op as! CalOperation).character, ",")
+            print("  ", (op as! CalOperation).character, ",")
         }
         print(")\n")
     }
@@ -66,55 +67,59 @@ struct CalStack<Element> {
 
 public final class Calculator: UIViewController {
 
-    private let expressionLabel = UILabel().fontSize(24).textColor(UIColor(rgbHexValue: 0x999999)).alignRight()
-    private let resultLabel = UILabel().fontSize(48).textColor(UIColor(rgbHexValue: 0x333333)).alignRight()
-    private let formatter = NSNumberFormatter()
+    fileprivate let expressionLabel = UILabel().fontSize(24).textColor(UIColor(rgbHexValue: 0x999999)).alignRight()
+    fileprivate let resultLabel = UILabel().fontSize(48).textColor(UIColor(rgbHexValue: 0x333333)).alignRight()
+    fileprivate let formatter = NumberFormatter()
     
     // 记录用户输入的操作
-    private var stack = CalStack<CalOperation>()
+    fileprivate var stack = CalStack<CalOperation>()
     // 备份执行的操作，主要用于用户输入"+/-"之后，变换成"×／÷"
-    private var backupStack = CalStack<CalOperation>()
+    fileprivate var backupStack = CalStack<CalOperation>()
     
     // 记录用户输入的数字和小数点
-    private var userInput = ""
+    fileprivate var userInput = ""
     // 用户输入的数值或者计算出来的结果
-    private var accumulator: Double = 0.0
+    fileprivate var accumulator: Double = 0.0
     // 记录表达式
-    private var expression = "" {
+    fileprivate var expression = "" {
         didSet {
             expressionLabel.text = expression
         }
     }
     // 记录前一个不会变化的表达式
-    private var preExpression = ""
+    fileprivate var preExpression = ""
     // 记录用户输入的数值表达式，这个值是不断变化和修正的
-    private var inputExpression = "" {
+    fileprivate var inputExpression = "" {
         didSet {
             expression = preExpression + inputExpression
         }
     }
     
     // 标记是否输入了等号
-    private var isPreEquality = true
+    fileprivate var isPreEquality = true
     // 标记是否输入了运算符
-    private var isPreOperator = false
+    fileprivate var isPreOperator = false
     
     /// 计算完成回调，将计算结果返回
-    public var completion: ((result: Double) -> Void)?
+    public var completion: ((Double) -> Void)?
     
     public init() {
         super.init(nibName: nil, bundle: nil)
-        
-        formatter.numberStyle = .DecimalStyle
+        initFormatter()
+    }
+    
+    public required init?(coder aDecoder: NSCoder) {
+        super.init(coder: aDecoder)
+        initFormatter()
+    }
+    
+    private func initFormatter() {
+        formatter.numberStyle = .decimal
         formatter.alwaysShowsDecimalSeparator = false
         formatter.maximumFractionDigits = 8
         formatter.exponentSymbol = "e"
         formatter.positiveInfinitySymbol = "错误"
         formatter.negativeInfinitySymbol = "错误"
-    }
-    
-    public required init?(coder aDecoder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
     }
     
     public override func viewDidLoad() {
@@ -126,15 +131,15 @@ public final class Calculator: UIViewController {
 
 private extension Calculator {
     func setupView() {
-        view.backgroundColor = UIColor.whiteColor()
+        view.backgroundColor = UIColor.white
         
         let resultBoardView = { () -> UIView in
             let resultView = UIView()
-            resultView.backgroundColor = UIColor.whiteColor()
-            expressionLabel.lineBreakMode = .ByTruncatingHead
+            resultView.backgroundColor = UIColor.white
+            expressionLabel.lineBreakMode = .byTruncatingHead
             resultLabel.text = "0"
             resultLabel.adjustsFontSizeToFitWidth = true
-            resultLabel.baselineAdjustment = .AlignCenters
+            resultLabel.baselineAdjustment = .alignCenters
             let space1 = UIView(), space2 = UIView(), space3 = UIView()
             
             resultView.addSubview(space1)
@@ -147,27 +152,27 @@ private extension Calculator {
                 view.translatesAutoresizingMaskIntoConstraints = false
             }
             
-            resultView.addConstraints(NSLayoutConstraint.constraintsWithVisualFormat("V:|[space1][expressionLabel(==29)][space2(==space1)][resultLabel][space3(==space1)]|", options: NSLayoutFormatOptions(rawValue: 0), metrics: nil, views: ["space1": space1, "space2": space2, "space3": space3, "expressionLabel": expressionLabel, "resultLabel": resultLabel]))
-            resultView.addConstraints(NSLayoutConstraint.constraintsWithVisualFormat("H:|[space1]|", options: NSLayoutFormatOptions(rawValue: 0), metrics: nil, views: ["space1": space1]))
-            resultView.addConstraints(NSLayoutConstraint.constraintsWithVisualFormat("H:|[space2]|", options: NSLayoutFormatOptions(rawValue: 0), metrics: nil, views: ["space2": space2]))
-            resultView.addConstraints(NSLayoutConstraint.constraintsWithVisualFormat("H:|[space3]|", options: NSLayoutFormatOptions(rawValue: 0), metrics: nil, views: ["space3": space3]))
-            resultView.addConstraints(NSLayoutConstraint.constraintsWithVisualFormat("H:|-15-[expressionLabel]-15-|", options: NSLayoutFormatOptions(rawValue: 0), metrics: nil, views: ["expressionLabel": expressionLabel]))
-            resultView.addConstraints(NSLayoutConstraint.constraintsWithVisualFormat("H:|-15-[resultLabel]-15-|", options: NSLayoutFormatOptions(rawValue: 0), metrics: nil, views: ["resultLabel": resultLabel]))
+            resultView.addConstraints(NSLayoutConstraint.constraints(withVisualFormat: "V:|[space1][expressionLabel(==29)][space2(==space1)][resultLabel][space3(==space1)]|", options: NSLayoutFormatOptions(rawValue: 0), metrics: nil, views: ["space1": space1, "space2": space2, "space3": space3, "expressionLabel": expressionLabel, "resultLabel": resultLabel]))
+            resultView.addConstraints(NSLayoutConstraint.constraints(withVisualFormat: "H:|[space1]|", options: NSLayoutFormatOptions(rawValue: 0), metrics: nil, views: ["space1": space1]))
+            resultView.addConstraints(NSLayoutConstraint.constraints(withVisualFormat: "H:|[space2]|", options: NSLayoutFormatOptions(rawValue: 0), metrics: nil, views: ["space2": space2]))
+            resultView.addConstraints(NSLayoutConstraint.constraints(withVisualFormat: "H:|[space3]|", options: NSLayoutFormatOptions(rawValue: 0), metrics: nil, views: ["space3": space3]))
+            resultView.addConstraints(NSLayoutConstraint.constraints(withVisualFormat: "H:|-15-[expressionLabel]-15-|", options: NSLayoutFormatOptions(rawValue: 0), metrics: nil, views: ["expressionLabel": expressionLabel]))
+            resultView.addConstraints(NSLayoutConstraint.constraints(withVisualFormat: "H:|-15-[resultLabel]-15-|", options: NSLayoutFormatOptions(rawValue: 0), metrics: nil, views: ["resultLabel": resultLabel]))
 
             return resultView
         }()
         let inputBoardView = CalInputView()
-        resultBoardView.backgroundColor = UIColor.whiteColor()
+        resultBoardView.backgroundColor = UIColor.white
         
         view.addSubview(resultBoardView)
         view.addSubview(inputBoardView)
         resultBoardView.translatesAutoresizingMaskIntoConstraints = false
         inputBoardView.translatesAutoresizingMaskIntoConstraints = false
         
-        view.addConstraints(NSLayoutConstraint.constraintsWithVisualFormat("V:|[topGuide][resultBoardView][inputBoardView]|", options: NSLayoutFormatOptions(rawValue: 0), metrics: nil, views: ["topGuide": topLayoutGuide, "resultBoardView": resultBoardView, "inputBoardView": inputBoardView]))
-        view.addConstraints(NSLayoutConstraint.constraintsWithVisualFormat("H:|[resultBoardView]|", options: NSLayoutFormatOptions(rawValue: 0), metrics: nil, views: ["resultBoardView": resultBoardView]))
-        view.addConstraints(NSLayoutConstraint.constraintsWithVisualFormat("H:|[inputBoardView]|", options: NSLayoutFormatOptions(rawValue: 0), metrics: nil, views: ["inputBoardView": inputBoardView]))
-        view.addConstraint(NSLayoutConstraint(item: resultBoardView, attribute: .Height, relatedBy: .Equal, toItem: inputBoardView, attribute: .Height, multiplier: 0.35, constant: 0))
+        view.addConstraints(NSLayoutConstraint.constraints(withVisualFormat: "V:|[topGuide][resultBoardView][inputBoardView]|", options: NSLayoutFormatOptions(rawValue: 0), metrics: nil, views: ["topGuide": topLayoutGuide, "resultBoardView": resultBoardView, "inputBoardView": inputBoardView]))
+        view.addConstraints(NSLayoutConstraint.constraints(withVisualFormat: "H:|[resultBoardView]|", options: NSLayoutFormatOptions(rawValue: 0), metrics: nil, views: ["resultBoardView": resultBoardView]))
+        view.addConstraints(NSLayoutConstraint.constraints(withVisualFormat: "H:|[inputBoardView]|", options: NSLayoutFormatOptions(rawValue: 0), metrics: nil, views: ["inputBoardView": inputBoardView]))
+        view.addConstraint(NSLayoutConstraint(item: resultBoardView, attribute: .height, relatedBy: .equal, toItem: inputBoardView, attribute: .height, multiplier: 0.35, constant: 0))
         
         inputBoardView.userOperation = { [unowned self] operation in
             self.handleOperation(operation)
@@ -176,7 +181,7 @@ private extension Calculator {
 }
 
 private extension Calculator {
-    func handleOperation(operation: CalOperation) {
+    func handleOperation(_ operation: CalOperation) {
         // 用户点击"＝"或者"清空(C)"操作之后，清空表达式，
         if isPreEquality {
             preExpression = ""
@@ -191,19 +196,19 @@ private extension Calculator {
         
         // 处理对应的各种操作
         switch operation {
-        case .Digit(let digit):
+        case .digit(let digit):
             handleDigit(digit)
-        case .DecimalPoint:
+        case .decimalPoint:
             handleDot()
-        case .Addition, .Subtraction:
+        case .addition, .subtraction:
             handleLowOperation(operation)
-        case .Multiplication, .Division:
+        case .multiplication, .division:
             handleHighOperation(operation)
-        case .Equality:
+        case .equality:
             handleEquality()
-        case .Clear:
+        case .clear:
             handleClearOperator()
-        case .Completion:
+        case .completion:
             handleComplication()
         default:
             break
@@ -211,7 +216,7 @@ private extension Calculator {
         
         // 记录上一次的操作是不是等于操作，清空(C)相当于一个结果为0的等于操作
         switch operation {
-        case .Equality, .Clear:
+        case .equality, .clear:
             isPreEquality = true
         default:
             isPreEquality = false
@@ -227,7 +232,7 @@ private extension Calculator {
     }
     
     // 处理输入数字
-    func handleDigit(digit: Int) {
+    func handleDigit(_ digit: Int) {
         // 一次最多输入9个数字，不包括小数点
         let hasDot = userInputHasDot()
         if userInput.characters.count >= (hasDot ? 10 : 9) {
@@ -273,23 +278,23 @@ private extension Calculator {
     }
     
     // 处理＋、－运算
-    func handleLowOperation(operation: CalOperation) {
+    func handleLowOperation(_ operation: CalOperation) {
         // 前一个是运算符，出栈
         if isPreOperator {
             //弹出前一个运算符
             stack.pop()
             // 表达式删除前一个运算符
-            expression.removeAtIndex(expression.endIndex.predecessor())
+            expression.remove(at: expression.characters.index(before: expression.endIndex))
         } else {
             // 将用户输入的操作数入栈
-            stack.push(.Operand(accumulator))
+            stack.push(.operand(accumulator))
             updateResultText(isCalculation: false)
         }
         
         // 1+2+ || 1+2*3+
         // 执行之前的运算，1+2+ －> 3+ || 1+2*3+ -> 1+6+
         if stack.count >= 3 {
-            if let operand2 = stack.pop(), operators = stack.pop(), operand1 = stack.pop() {
+            if let operand2 = stack.pop(), let operators = stack.pop(), let operand1 = stack.pop() {
                 // 备份操作历史
                 backupStack.push(operand2)
                 backupStack.push(operators)
@@ -301,7 +306,7 @@ private extension Calculator {
         // 1+2*3+ -> 1+6+ -> 7+
         // 执行之前的运算
         if stack.count >= 3 {
-            if let operand2 = stack.pop(), operators = stack.pop(), operand1 = stack.pop() {
+            if let operand2 = stack.pop(), let operators = stack.pop(), let operand1 = stack.pop() {
                 // 备份操作历史，operand2是上一次的运算结果，所以不需要备份
                 backupStack.push(operators)
                 backupStack.push(operand1)
@@ -314,14 +319,14 @@ private extension Calculator {
     }
     
     // 处理×、÷运算
-    func handleHighOperation(operation: CalOperation) {
+    func handleHighOperation(_ operation: CalOperation) {
         // 前一个是运算符，出栈
         // userInput.isEmpty有两种情况，一种是前一个是运算符，二是相等操作
         // 所以用!isEquality排除不是相等操作的情况
         if isPreOperator /*userInput.isEmpty && !isEquality*/ {
             
             // 由低运算符变成高运算符，并且之前进行了数学运算，恢复以前的操作，由操作结果恢复成运算表达式
-            if let topOperator = stack.topItem where topOperator.isLowPriorityOperator && backupStack.count > 0 {
+            if let topOperator = stack.topItem, topOperator.isLowPriorityOperator && backupStack.count > 0 {
                 // 弹出前一个运算符
                 stack.pop()
                 //弹出运算结果
@@ -334,7 +339,7 @@ private extension Calculator {
                 
                 // 恢复之前的运算中间值
                 if let topOperation = stack.topItem {
-                    if case CalOperation.Operand(let value) = topOperation {
+                    if case CalOperation.operand(let value) = topOperation {
                         accumulator = value
                         updateResultText(isCalculation: true)
                     }
@@ -345,10 +350,10 @@ private extension Calculator {
             }
             
             // 表达式删除前一个运算符
-            expression.removeAtIndex(expression.endIndex.predecessor())
+            expression.remove(at: expression.characters.index(before: expression.endIndex))
         } else {
             // 将用户输入的操作数入栈
-            stack.push(.Operand(accumulator))
+            stack.push(.operand(accumulator))
             updateResultText(isCalculation: false)
         }
         
@@ -356,7 +361,7 @@ private extension Calculator {
         if stack.count >= 3 {
             if let previousOperator = stack.secondItem {
                 switch previousOperator {
-                case .Multiplication, .Division:
+                case .multiplication, .division:
                     popToCompute()
                 default:
                     break
@@ -375,10 +380,10 @@ private extension Calculator {
             // 弹出前一个运算符
             stack.pop()
             // 表达式删除前一个运算符
-            expression.removeAtIndex(expression.endIndex.predecessor())
+            expression.remove(at: expression.characters.index(before: expression.endIndex))
         } else {
             // 将用户输入的操作数入栈
-            stack.push(.Operand(accumulator))
+            stack.push(.operand(accumulator))
             updateResultText(isCalculation: false)
         }
         
@@ -413,13 +418,13 @@ private extension Calculator {
     // 处理完成操作
     func handleComplication() {
         handleEquality()
-        completion?(result: accumulator)
-        navigationController?.popViewControllerAnimated(true)
+        completion?(accumulator)
+        navigationController?.popViewController(animated: true)
     }
     
     //MARK: - Help Methods
     // 将运算符入栈，清空userInput
-    func pushOperator(operation: CalOperation) {
+    func pushOperator(_ operation: CalOperation) {
         stack.push(operation)
         expression += operation.character
         userInput = ""
@@ -427,32 +432,32 @@ private extension Calculator {
     
     /// 出栈，然后进行数值运算，最后把结果入栈
     func popToCompute() {
-        if let operand2 = stack.pop(), operators = stack.pop(), operand1 = stack.pop() {
+        if let operand2 = stack.pop(), let operators = stack.pop(), let operand1 = stack.pop() {
             computeAndPushResult(operand1: operand1, operators: operators, operand2: operand2)
         }
     }
     
     // 数学运算然后入栈和显示结果
-    func computeAndPushResult(operand1 operand1: CalOperation, operators: CalOperation, operand2: CalOperation) {
+    func computeAndPushResult(operand1: CalOperation, operators: CalOperation, operand2: CalOperation) {
         if let result = compute(operand1: operand1, operators: operators, operand2: operand2) {
-            stack.push(.Operand(result))
+            stack.push(.operand(result))
             accumulator = result
             updateResultText(isCalculation: true)
         }
     }
     
     /// 进行加减乘除数学运算
-    func compute(operand1 operand1: CalOperation, operators: CalOperation, operand2: CalOperation) -> Double? {
+    func compute(operand1: CalOperation, operators: CalOperation, operand2: CalOperation) -> Double? {
         var result: Double? = nil
-        if case CalOperation.Operand(let value1) = operand1, case CalOperation.Operand(let value2) = operand2 {
+        if case CalOperation.operand(let value1) = operand1, case CalOperation.operand(let value2) = operand2 {
             switch operators {
-            case .Addition:
+            case .addition:
                 result = value1 + value2
-            case .Subtraction:
+            case .subtraction:
                 result = value1 - value2
-            case .Multiplication:
+            case .multiplication:
                 result = value1 * value2
-            case .Division:
+            case .division:
                 result = value1 / value2
             default:
                 break
@@ -463,13 +468,13 @@ private extension Calculator {
     }
     
     // 更新resultLabel的内容
-    func updateResultText(isCalculation isCalculation: Bool) {
+    func updateResultText(isCalculation: Bool) {
         if accumulator >= 1000000000 {
-            formatter.numberStyle = .ScientificStyle
+            formatter.numberStyle = .scientific
         } else {
-            formatter.numberStyle = .DecimalStyle
+            formatter.numberStyle = .decimal
         }
-        let string = formatter.stringFromNumber(accumulator) ?? "0"
+        let string = formatter.string(from: NSNumber(value: accumulator)) ?? "0"
         resultLabel.text = string
         
         if !isCalculation {
@@ -479,7 +484,7 @@ private extension Calculator {
     
     // 判断是否有小数点
     func userInputHasDot() -> Bool {
-        return userInput.containsString(".")
+        return userInput.contains(".")
     }
 }
 

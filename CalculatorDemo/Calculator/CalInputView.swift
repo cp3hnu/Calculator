@@ -10,37 +10,37 @@ import UIKit
 
 enum CalOperation {
     
-    case Addition
-    case Subtraction
-    case Multiplication
-    case Division
-    case Equality
-    case Clear
-    case Completion
-    case DecimalPoint
-    case Digit(Int)
+    case addition
+    case subtraction
+    case multiplication
+    case division
+    case equality
+    case clear
+    case completion
+    case decimalPoint
+    case digit(Int)
     
     // 操作数，由多个digit和"."组成
-    case Operand(Double)
+    case operand(Double)
     
     var character: String {
         var _character = ""
         switch self {
-        case .Addition:
+        case .addition:
             _character = "+"
-        case .Subtraction:
+        case .subtraction:
             _character = "-"
-        case .Multiplication:
+        case .multiplication:
             _character = "×"
-        case .Division:
+        case .division:
             _character = "÷"
-        case .Equality:
+        case .equality:
             _character = "＝"
-        case .DecimalPoint:
+        case .decimalPoint:
             _character = "."
-        case .Digit(let digit):
+        case .digit(let digit):
             _character = String(digit)
-        case .Operand(let value):
+        case .operand(let value):
             _character = String(value)
         default:
             _character = ""
@@ -51,7 +51,7 @@ enum CalOperation {
     
     var isOperator: Bool {
         switch self {
-        case .Addition, .Subtraction, .Multiplication, .Division:
+        case .addition, .subtraction, .multiplication, .division:
             return true
         default:
             return false
@@ -60,7 +60,7 @@ enum CalOperation {
     
     var isHighPriorityOperator: Bool {
         switch self {
-        case .Multiplication, .Division:
+        case .multiplication, .division:
             return true
         default:
             return false
@@ -69,7 +69,7 @@ enum CalOperation {
     
     var isLowPriorityOperator: Bool {
         switch self {
-        case .Addition, .Subtraction:
+        case .addition, .subtraction:
             return true
         default:
             return false
@@ -78,7 +78,7 @@ enum CalOperation {
     
     var isUserInput: Bool {
         switch self {
-        case .Digit(_), .DecimalPoint:
+        case .digit(_), .decimalPoint:
             return true
         default:
             return false
@@ -90,31 +90,31 @@ private let kButtonBaseTag = 100
 
 final class CalInputView: UIView {
     
-    private var array = [UIButton]()
+    fileprivate var array = [UIButton]()
     var userOperation: ((CalOperation) -> Void)?
     
     override init(frame: CGRect) {
         super.init(frame: frame)
     
         let characters = ["←", "C", "÷", "×", "1", "2", "3", "－", "4", "5", "6", "＋", "7", "8", "9", "=", "0", "."]
-        for (i, title) in characters.enumerate() {
+        for (i, title) in characters.enumerated() {
             let button = UIButton()
             button.tag = kButtonBaseTag + i
-            button.setTitleColor(UIColor(rgbHexValue: 0x666666), forState: .Normal)
+            button.setTitleColor(UIColor(rgbHexValue: 0x666666), for: UIControlState())
             button.layer.borderWidth = 0.5
-            button.layer.borderColor = UIColor(rgbHexValue: 0xEBEBEB).CGColor
-            button.setTitle(title, forState: .Normal)
-            button.addTarget(self, action: #selector(buttonClicked(_:)), forControlEvents: .TouchUpInside)
+            button.layer.borderColor = UIColor(rgbHexValue: 0xEBEBEB).cgColor
+            button.setTitle(title, for: UIControlState())
+            button.addTarget(self, action: #selector(buttonClicked(_:)), for: .touchUpInside)
             self.addSubview(button)
             array.append(button)
             
             if (i >= 0 && i <= 3) || i == 7 || i == 11 {
-                button.setBackgroundColor(UIColor(rgbTriple: (252, 252, 252)), forUIControlState: .Normal)
+                button.setBackgroundColor(UIColor(rgbTriple: (252, 252, 252)), forUIControlState: UIControlState())
             } else if i == 15 {
-                button.setBackgroundColor(UIColor.systemTintColor, forUIControlState: .Normal)
-                button.setTitleColor(UIColor.whiteColor(), forState: .Normal)
+                button.setBackgroundColor(UIColor.systemTintColor, forUIControlState: UIControlState())
+                button.setTitleColor(UIColor.white, for: UIControlState())
             } else {
-                button.setBackgroundColor(UIColor.whiteColor(), forUIControlState: .Normal)
+                button.setBackgroundColor(UIColor.white, forUIControlState: UIControlState())
             }
         }
     }
@@ -125,8 +125,8 @@ final class CalInputView: UIView {
         let buttonWidth = frame.width/4
         let buttonHeight = frame.height/5
         var buttonFrame: CGRect
-        for (i, button) in array.enumerate() {
-            buttonFrame = CGRectMake(CGFloat(i%4) * buttonWidth, CGFloat(i/4) * buttonHeight, buttonWidth, buttonHeight)
+        for (i, button) in array.enumerated() {
+            buttonFrame = CGRect(x: CGFloat(i%4) * buttonWidth, y: CGFloat(i/4) * buttonHeight, width: buttonWidth, height: buttonHeight)
             if i == 15 {
                 buttonFrame.size.height = 2 * buttonHeight
             } else if i == 16 {
@@ -148,7 +148,7 @@ final class CalInputView: UIView {
 //MARK: - Action
 private extension CalInputView {
     
-    @objc func buttonClicked(button: UIButton) {
+    @objc func buttonClicked(_ button: UIButton) {
         let tag = Int(button.tag) - kButtonBaseTag
         if let closure = userOperation, let operation = operation(forTag: tag) {
             closure(operation)
@@ -159,29 +159,29 @@ private extension CalInputView {
         var _operation: CalOperation? = nil
         switch tag {
         case 0:
-            _operation = .Completion
+            _operation = .completion
         case 1:
-            _operation = .Clear
+            _operation = .clear
         case 2:
-            _operation = .Division
+            _operation = .division
         case 3:
-            _operation = .Multiplication
+            _operation = .multiplication
         case 4...6:
-            _operation = .Digit(tag - 3)
+            _operation = .digit(tag - 3)
         case 7:
-            _operation = .Subtraction
+            _operation = .subtraction
         case 8...10:
-            _operation = .Digit(tag - 4)
+            _operation = .digit(tag - 4)
         case 11:
-            _operation = .Addition
+            _operation = .addition
         case 12...14:
-            _operation = .Digit(tag - 5)
+            _operation = .digit(tag - 5)
         case 15:
-            _operation = .Equality
+            _operation = .equality
         case 16:
-            _operation = .Digit(0)
+            _operation = .digit(0)
         case 17:
-            _operation = .DecimalPoint
+            _operation = .decimalPoint
         default:
             break
         }
